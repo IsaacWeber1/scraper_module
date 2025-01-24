@@ -15,7 +15,7 @@ class ScraperEngine:
         self.process = CrawlerProcess(self.settings)
         self.logger = logging.getLogger(__name__)
 
-    def run(self, url, steps, use_playwright=False):
+    def run(self, url, steps, use_playwright=False, pagination=None):
         """
         Launch the StepSpider with the given url and steps.
         Blocks until scraping finishes.
@@ -38,7 +38,8 @@ class ScraperEngine:
             crawler,
             start_url=url,
             steps=steps,
-            use_playwright=use_playwright
+            use_playwright=use_playwright,
+            pagination=pagination
         )
 
         self.logger.info("Starting crawl.")

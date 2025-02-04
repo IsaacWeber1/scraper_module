@@ -82,9 +82,9 @@ Other dependencies include standard libraries such as `glob`, `os`, and `importl
 
 ## Usage
 
-   **Running All Spiders**
+  **Running All Spiders**
 
-   To run all spider engines at once, use a main run script similar to this:
+  To run all spider engines at once, use a main run script similar to this:
    ```python
    # run.py
    import glob
@@ -130,7 +130,7 @@ Other dependencies include standard libraries such as `glob`, `os`, and `importl
        runner.save_all()
    ```
 
-    For running just a single spider, you can use a run_single script like this:
+  If you wish to run one spider at a time, you can use a run_single script like this:
    ```python
    # run_single.py
    import os

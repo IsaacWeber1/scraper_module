@@ -48,9 +48,6 @@ The module consists of the following key components:
 - **Runner** (`scraper_module/scraper_lib/runner.py`):  
   Orchestrates multiple scraper engines by launching a single Scrapy `CrawlerProcess` to run all defined spiders. It also collects and saves the output items to JSON files.
 
-- **Sample Spiders** (`spiders/*.py`):  
-  Example spider definitions for various sites (e.g., `boston_university.py`, `brown_university.py`, `texas_am_university.py`) that demonstrate how to configure the engine for each site.
-
 ## Requirements
 
 - Python 3.7+
@@ -59,15 +56,17 @@ The module consists of the following key components:
   - [scrapy-playwright](https://github.com/scrapy-plugins/scrapy-playwright)  
   - [Playwright](https://playwright.dev/python/)
 
-Other dependencies include standard libraries such as `glob`, `os`, and `importlib`.
+Other dependencies include in requirements.txt
 
 ## Installation
 
 1. **Clone the repository:**
 
+   Within your project directory, clone the scraper module. (run from outside the module)
+
    ```bash
-   git clone <repository-url>
-   cd <repository-directory>
+   git clone <https://github.com/IsaacWeber1/scraper_module.git>
+   cd <scraper_module>
 
 2. **Create and activate a virtual environment:**
 
@@ -82,8 +81,10 @@ Other dependencies include standard libraries such as `glob`, `os`, and `importl
 
 ## Usage
 
-  **Running All Spiders**
+   **Running All Spiders**
 
+  New spiders and scripts for running them should be defined outside of the scraper module.
+  
   To run all spider engines at once, use a main run script similar to this:
    ```python
    # run.py

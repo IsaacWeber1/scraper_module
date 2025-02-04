@@ -68,3 +68,65 @@ Other dependencies include standard libraries such as `glob`, `os`, and `importl
    ```bash
    git clone <repository-url>
    cd <repository-directory>
+
+2. **Create and activate a virtual environment:**
+
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+2. **Install dependencies:**
+
+   ```bash
+   pip install -r requirements.txt
+
+## Usage
+
+   **Running All Spiders**
+
+   To run all spider engines at once, use a main run script similar to this:
+      ```python
+# run.py
+import glob
+import os
+import importlib.util
+from scraper_module.scraper_lib.runner import RunAllEngines
+
+def import_spider_module(spider_path, spider_name):
+    spec = importlib.util.spec_from_file_location(spider_name, spider_path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+def clean_output():
+    # Remove any existing JSON output files
+    for file in glob.glob("data_output/*.json"):
+        os.remove(file)
+
+if __name__ == "__main__":
+    clean_output()
+    # Load spider modules from the 'spiders' directory
+    spider_files = glob.glob("spiders/*.py")
+    engines = []
+    for spider_file in spider_files:
+        spider_name = os.path.basename(spider_file).replace(".py", "")
+        module = import_spider_module(spider_file, spider_name)
+        if hasattr(module, "engine"):
+            engine = module.engine
+            # Ensure the engine has a spider name set
+            if not engine.spider_name:
+                engine.spider_name = spider_name
+            engines.append(engine)
+    
+    # Instantiate and run the orchestrator
+    runner = RunAllEngines(
+        engines=engines,
+        global_settings={
+            "LOG_LEVEL": "DEBUG",
+            "FEEDS": {}  # Disable built-in feed exports if not needed
+        }
+    )
+    runner.run_all()
+    runner.save_all()
+
+      ```

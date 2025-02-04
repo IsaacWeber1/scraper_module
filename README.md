@@ -81,11 +81,11 @@ Other dependencies include in requirements.txt
 
 ## Usage
 
-  ##Running All Spiders
+   New spiders and scripts for running them should be defined outside of the scraper module.
 
-  New spiders and scripts for running them should be defined outside of the scraper module.
-  
-  To run all spider engines at once, use a main run script similar to this:
+   ### Running All Spiders
+
+   To run all spider engines at once, use a main run script similar to this:
    ```python
    # run.py
    import glob
@@ -130,8 +130,8 @@ Other dependencies include in requirements.txt
        runner.run_all()
        runner.save_all()
    ```
-
-  If you wish to run one spider at a time, you can use a run_single script like this:
+   ### Running a Single Spider
+   If you wish to run one spider at a time, you can use a run_single script like this:
    ```python
    # run_single.py
    import os

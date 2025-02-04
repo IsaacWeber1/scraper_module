@@ -129,3 +129,24 @@ Other dependencies include standard libraries such as `glob`, `os`, and `importl
        runner.run_all()
        runner.save_all()
 
+    For running just a single spider, you can use a run_single script like this:
+   ```python
+   # run_single.py
+   import os
+   import importlib.util
+   from scraper_module.scraper_lib.scraper_engine import ScraperEngine
+
+   def import_spider_module(spider_path, spider_name):
+       spec = importlib.util.spec_from_file_location(spider_name, spider_path)
+       module = importlib.util.module_from_spec(spec)
+       spec.loader.exec_module(module)
+       return module
+
+   if __name__ == "__main__":
+       spider_name = "example_spider"  # Change this to the desired spider's name
+       spider_path = os.path.join("spiders", f"{spider_name}.py")
+       module = import_spider_module(spider_path, spider_name)
+       if hasattr(module, "engine"):
+           engine = module.engine
+           engine.spider_name = spider_name  # Ensure the spider name is set
+           engine.run()  # Run this engine on its own

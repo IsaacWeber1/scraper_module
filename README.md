@@ -128,6 +128,7 @@ Other dependencies include standard libraries such as `glob`, `os`, and `importl
        )
        runner.run_all()
        runner.save_all()
+   ```
 
     For running just a single spider, you can use a run_single script like this:
    ```python
@@ -150,3 +151,5 @@ Other dependencies include standard libraries such as `glob`, `os`, and `importl
            engine = module.engine
            engine.spider_name = spider_name  # Ensure the spider name is set
            engine.run()  # Run this engine on its own
+   ```
+

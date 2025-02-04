@@ -154,3 +154,72 @@ Other dependencies include in requirements.txt
            engine.run()  # Run this engine on its own
    ```
 
+## Adding New Spiders
+
+To add a new spider for a site:
+
+1. **Create a spiders outside of the scraper module.**
+
+2. **Create a new file for the spider, e.g. example_site.py**
+
+3. **Define your engine configuration by importing ScraperEngine from scraper_module.scraper_lib.scraper_engine, like so:**
+
+   ```python
+   from scraper_module.scraper_lib.scraper_engine import ScraperEngine
+
+   engine = ScraperEngine(spider_name="my_site")
+   engine.set_playwright(False)  # Set True if JavaScript rendering is needed
+   engine.set_url("https://example.com/")
+
+   # Optional: configure pagination if necessary
+   engine.next_page(
+       type="search_links",  # or "listed_links"
+       search_space='xpath://div[@class="pagination"]',
+       target_page_selector="xpath://a[contains(text(), 'Next')]/@href",
+       link_selector="xpath:.//a/@href"  # if using listed_links type
+   )
+
+   # Define extraction tasks:
+   engine.add_task(
+       name="articles",
+       action="find",
+       search_space='xpath://div[@class="articles-container"]',
+       repeating_selector='xpath://div[@class="article"]',
+       num_required=1,
+       fields={
+           "title": "xpath://h2/text()",
+           "link": "xpath://a/@href",
+           "description": "xpath://p[@class='summary']//text()join"
+       }
+   )
+   ```
+
+## Configuration Options
+
+   ### Setting the URL and Playwright Mode
+   
+   - **set_url(url):** Defines the starting URL for the spider.
+   - **set_playwright(use_playwright):** Enables or disables Playwright for the spider. Set to **True** if the site requires JavaScript rendering.
+
+   ### Pagination Configuration
+
+   - **next_page(...):** Configures pagination with parameters:
+     - **type:** Either **"search_links"** (for recursive link search) or **"listed_links"** (for a more straightforward list).
+     - **search_space:** A selector (using XPath or CSS) to limit the pagination container.
+     - **target_page_selector:** A selector to identify when to stop or move to the next page.
+     - **link_selector:** (For listed_links) A selector to extract individual pagination links.
+   
+   ### Task/Field Extraction Configuration
+   
+   - **add_task(...):** Adds a scraping task to the engine.
+     - **name:** Identifier for the task.
+     - **action:** Currently supports "find" (to extract data).
+     - **search_space:** Selector to find the container where data lives.
+     - **repeating_selector:** Selector for repeating elements (like each row or item).
+     - **fields:** A dictionary mapping field names (e.g., "title", "description") to selectors.
+     - **num_required:** Optionally, the number of fields that are required (to filter out incomplete items).
+     - **include:** Optional dictionary to filter field values by regex (e.g., to exclude anchor links).
+
+## License
+
+This project is released under the MIT License.

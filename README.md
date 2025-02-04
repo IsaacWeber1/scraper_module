@@ -16,6 +16,7 @@ The **Scraper Module** is a modular web scraping framework built on top of [Scra
   - [Setting the URL and Playwright Mode](#setting-the-url-and-playwright-mode)
   - [Pagination Configuration](#pagination-configuration)
   - [Task/Field Extraction Configuration](#taskfield-extraction-configuration)
+- [Project Structure](#project-structure)
 - [License](#license)
 
 ## Overview
@@ -216,6 +217,31 @@ To add a new spider for a site:
      - **fields:** A dictionary mapping field names (e.g., "title", "description") to selectors.
      - **num_required:** Optionally, the number of fields that are required (to filter out incomplete items).
      - **include:** Optional dictionary to filter field values by regex (e.g., to exclude anchor links).
+
+## Project Structure
+
+   ```graphql
+   example_project/
+   ├── run.py                # Orchestrates running all engines
+   ├── run_single.py         # For running a single spider engine
+   ├── spiders/              # Directory containing site-specific spider definitions
+   │   ├── example_spider.py
+   │   └── ... 
+   ├── data_output/          # Folder where JSON outputs are saved
+   └── scraper_module/       # IMPORTED
+       ├── scraper_lib/
+       │   ├── engine_spider.py      # Generic spider class
+       │   ├── helpers.py            # Helper functions for selectors and pagination
+       │   ├── runner.py             # Runner to orchestrate engines
+       │   ├── scraper_engine.py     # Core engine that holds configuration
+       │   └── ... 
+       ├── scraper_project/          # Standard Scrapy project files (items, pipelines, middlewares)
+       │   ├── items.py
+       │   ├── middlewares.py
+       │   ├── pipelines.py
+       │   └── spiders/              # Optional: if you want to include spiders as part of a Scrapy project
+       └── ...
+   ```
 
 ## License
 

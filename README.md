@@ -16,9 +16,6 @@ The **Scraper Module** is a modular web scraping framework built on top of [Scra
   - [Setting the URL and Playwright Mode](#setting-the-url-and-playwright-mode)
   - [Pagination Configuration](#pagination-configuration)
   - [Task/Field Extraction Configuration](#taskfield-extraction-configuration)
-- [Project Structure](#project-structure)
-- [Extending the Module](#extending-the-module)
-- [Troubleshooting](#troubleshooting)
 - [License](#license)
 
 ## Overview

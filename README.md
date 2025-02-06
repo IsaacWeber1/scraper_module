@@ -165,8 +165,8 @@ To add a new spider for a site:
    ```python
    from scraper_module.scraper_lib.scraper_engine import ScraperEngine
 
-   $1 Initialize the ScraperEngine with a unique spider name
-   $1ngine = ScraperEngine(spider_name="brown_university")
+   # Initialize the ScraperEngine with a unique spider name
+   e1ngine = ScraperEngine(spider_name="brown_university")
 
    # Disable Playwright integration as the target site doesn't require JavaScript rendering
    engine.set_playwright(False)

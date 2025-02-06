@@ -165,29 +165,32 @@ To add a new spider for a site:
    ```python
    from scraper_module.scraper_lib.scraper_engine import ScraperEngine
 
-   engine = ScraperEngine(spider_name="my_site")
-   engine.set_playwright(False)  # Set True if JavaScript rendering is needed
-   engine.set_url("https://example.com/")
+   $1 Initialize the ScraperEngine with a unique spider name
+   $1ngine = ScraperEngine(spider_name="brown_university")
 
-   # Optional: configure pagination if necessary
+   # Disable Playwright integration as the target site doesn't require JavaScript rendering
+   engine.set_playwright(False)
+
+   # Set the starting URL for the spider
+   engine.set_url("https://bulletin.brown.edu/")
+
+   # Configure pagination to navigate through the course listings
    engine.next_page(
-       type="search_links",  # or "listed_links"
-       search_space='xpath://div[@class="pagination"]',
-       target_page_selector="xpath://a[contains(text(), 'Next')]/@href",
-       link_selector="xpath:.//a/@href"  # if using listed_links type
+       type="search_links",  # Use 'search_links' to recursively search for pagination links
+       search_space='xpath://div[@id="cl-menu"]/ul[@id="/"]',  # Define the area to search for links
+       target_page_selector='xpath://div[@id="tabs"]/ul/li[@id="courseinventorytab"]/a/@href'  # XPath to the 'Course Inventory' tab link
    )
 
-   # Define extraction tasks:
+   # Add a task to extract course information
    engine.add_task(
-       name="articles",
-       action="find",
-       search_space='xpath://div[@class="articles-container"]',
-       repeating_selector='xpath://div[@class="article"]',
-       num_required=1,
+       name="courses",  # Name of the task
+       action="find",  # Action type; 'find' is used to locate and extract data
+       search_space='xpath://*[@id="courseinventorycontainer"]/div/div',  # Define the container where course data resides
+       repeating_selector="div",  # Each course is within a 'div' element
+       num_required=1,  # Require at least one field to consider the extraction successful
        fields={
-           "title": "xpath://h2/text()",
-           "link": "xpath://a/@href",
-           "description": "xpath://p[@class='summary']//text()join"
+           "title": 'xpath:p[@class="courseblocktitle"]/strong//text()',  # XPath to extract the course title
+           "description": 'xpath:p[@class="courseblockdesc"]//text()join'  # XPath to extract the course description; 'join' concatenates multiple text nodes
        }
    )
    ```

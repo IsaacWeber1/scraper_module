@@ -9,6 +9,7 @@ The **Scraper Module** is a highly modular web scraping framework built on [Scra
 - [Requirements](#requirements)
 - [Installation](#installation)
 - [Usage](#usage)
+  - [Setting Up the Framework](#setting-up-the-framework)
   - [Running All Spiders](#running-all-spiders)
   - [Running a Single Spider](#running-a-single-spider)
 - [Adding New Scrapers](#adding-new-scrapers)
@@ -22,7 +23,7 @@ The **Scraper Module** is a highly modular web scraping framework built on [Scra
 The **Scraper Module** is designed for **scalability, reusability, and ease of use**.
 
 ### **Key Features:**
-- **Dynamic Configuration System**: Define spiders using structured Python configuration files (`configs/`).
+- **Dynamic Configuration System**: Define spiders using structured Python configuration files.
 - **Modular Task Execution**: Supports **Find**, **Follow**, and **Pagination** operations.
 - **Efficient Pagination Handling**: Automatically handles **recursive and link-based pagination**.
 - **Playwright Integration**: Enables scraping of **JavaScript-heavy websites** when needed.
@@ -33,7 +34,7 @@ The **Scraper Module** is designed for **scalability, reusability, and ease of u
 The module consists of the following key components:
 
 - **ScraperEngine** (`scraper_module/scraper_lib/scraper_engine.py`):  
-  Configures and initializes each scraper from the **configuration system** (`configs/`).
+  Configures and initializes each scraper from a structured configuration.
 
 - **StepSpider** (`scraper_module/scraper_lib/engine_spider.py`):  
   The Scrapy-based spider that executes configured tasks (Find, Follow) and handles pagination.
@@ -56,49 +57,45 @@ Install dependencies from `requirements.txt`.
 
 ## Installation
 
-1. **Clone the repository**:
+1. **Clone the repository:**
+
+   The Scraper Module is meant to be a reusable framework that plugs into your own project.
+
    ```bash
    git clone https://github.com/IsaacWeber1/scraper_module.git
-   cd scraper_module
    ```
 
-2. **Create and activate a virtual environment**:
+2. **Integrate the framework into your project:**
+
+   Place the `scraper_module/` directory in your project folder. The directory structure for your project should look something like this:
+   ```
+   your_project/
+   ├── scraper_module/       # Cloned Scraper Module framework
+   ├── configs/              # Your spider configurations (you create this folder)
+   ├── run.py                # Main script to orchestrate spiders (you create this file)
+   ├── data_output/          # Folder for scraped data (you create this folder)
+   └── ...                   # Other project files
+   ```
+
+3. **Create and activate a virtual environment:**
    ```bash
    python -m venv venv
    source venv/bin/activate  # On Windows: venv\Scripts\activate
    ```
 
-3. **Install dependencies**:
+4. **Install dependencies:**
    ```bash
-   pip install -r requirements.txt
+   pip install -r scraper_module/requirements.txt
    ```
 
 ## Usage
 
-### **Running All Spiders**
-Run all configured scrapers using:
-```bash
-python run.py
-```
-This script:
-- Loads **spider configurations** from `configs/`
-- Filters out **excluded spiders** (e.g., long-running scrapers)
-- Runs all **enabled spiders in parallel**
+### Setting Up the Framework
 
-### **Running a Single Spider**
-To run a specific spider:
-```python
-from scraper_module.scraper_lib.scraper_engine import ScraperEngine
-from configs.brown_university import config
+1. **Create the `configs/` folder**:
+   This folder will contain the configuration files for your scrapers. Each scraper should have its own configuration file written in Python.
 
-engine = ScraperEngine(config)
-engine.run()
-```
-
-## Adding New Scrapers
-
-1. **Create a new config file** in `configs/` (e.g., `configs/example_university.py`).
-2. **Define the scraper using `SpiderConfig`**:
+   Example configuration file (`configs/example_university.py`):
    ```python
    from scraper_module.config import *
 
@@ -126,10 +123,68 @@ engine.run()
    )
    ```
 
-3. **Run the scraper**:
-   ```bash
-   python run.py
+2. **Create the `run.py` file**:
+   This script orchestrates the execution of all spiders.
+   ```python
+   import glob
+   import importlib.util
+   from scraper_module.scraper_lib.runner import RunAllEngines
+   from scraper_module.scraper_lib.scraper_engine import ScraperEngine
+
+   def clean_output():
+       # Remove any existing JSON output files to start fresh.
+       for file in glob.glob("data_output/*.json"):
+           os.remove(file)
+
+   EXCLUDE_ENGINES = {"example_exclude"}
+
+   if __name__ == "__main__":
+       clean_output()
+       config_files = [
+           file for file in glob.glob("configs/*.py")
+           if os.path.basename(file).replace(".py", "") not in EXCLUDE_ENGINES
+       ]
+
+       engines = []
+       for config_file in config_files:
+           spec = importlib.util.spec_from_file_location(
+               "config", config_file
+           )
+           module = importlib.util.module_from_spec(spec)
+           spec.loader.exec_module(module)
+           engines.append(ScraperEngine(module.config))
+
+       runner = RunAllEngines(engines=engines)
+       runner.run_all()
+       runner.save_all()
    ```
+
+3. **Create the `data_output/` folder**:
+   This folder will store the JSON output files generated by your spiders.
+
+### Running All Spiders
+
+To execute all spiders defined in the `configs/` folder, run:
+```bash
+python run.py
+```
+
+### Running a Single Spider
+To run a specific spider programmatically:
+```python
+from scraper_module.scraper_lib.scraper_engine import ScraperEngine
+from configs.example_university import config
+
+engine = ScraperEngine(config)
+engine.run()
+```
+
+## Adding New Scrapers
+
+1. **Create a new config file** in `configs/` (e.g., `configs/new_university.py`).
+2. Define the scraper tasks and pagination in the config file using `SpiderConfig`.
+3. Add your scraper configuration file to the `configs/` folder. 
+4. Run the framework (`python run.py`).
 
 ## Configuration System
 
@@ -175,12 +230,12 @@ Find(
 ## Project Structure
 
 ```
-scraper_module/
-│── run.py                  # Runs all scrapers
-│── configs/                 # Configuration files for spiders
+your_project/
+│── run.py                  # Orchestrates spider execution
+│── configs/                # Configuration files for spiders
 │   ├── example_university.py
-│   ├── brown_university.py
-│── scraper_module/
+│   ├── new_university.py
+│── scraper_module/         # Imported scraping framework
 │   ├── config.py            # Dataclasses for scraper configs
 │   ├── scraper_lib/
 │   │   ├── runner.py        # Runs multiple scrapers

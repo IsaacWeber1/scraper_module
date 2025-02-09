@@ -1,5 +1,6 @@
 # scraper_module/scraper_lib/helpers.py
 from parsel import Selector
+from urllib.parse import urlparse, urlunparse
 import logging
 
 logger = logging.getLogger(__name__)
@@ -46,12 +47,18 @@ def find_pages(selector_or_response, step):
     if not (search_space and link_selector):
         logger.debug("Pagination step missing search_space or link_selector.")
         return []
+    seen_urls = set()
     for node in _select(selector_or_response, search_space):
         for ln in _select(node, link_selector):
             href = ln.get()
             if href:
-                logger.debug(f"Found pagination URL: {href}")
-                yield href
+                abs_url = selector_or_response.urljoin(href)
+                canonical_url = canonicalize_url(abs_url)
+                if canonical_url not in seen_urls:
+                    seen_urls.add(canonical_url)
+                    logger.debug(f"Found pagination URL: {canonical_url}")
+                    yield abs_url
+
 
 def find(selector_or_response, step):
     """
@@ -61,6 +68,10 @@ def find(selector_or_response, step):
     repeating_selector = step.get("repeating_selector")
     fields = step.get("fields", {})
     parents = _select(selector_or_response, search_space) if search_space else [selector_or_response]
+    logger.debug(f"Found {len(parents)} parent(s) using search_space: {search_space}")
+    if not parents:
+        logger.debug(f"No parents found in {selector_or_response.url} using search_space: {search_space}")
+
     num_required = step.get("num_required", 0)
     required_fields = list(fields.keys())[:num_required] if num_required > 0 else []
     for p in parents:
@@ -73,3 +84,15 @@ def find(selector_or_response, step):
             if hasattr(selector_or_response, "request"):
                 item["source"] = selector_or_response.request.url
             yield item
+
+def canonicalize_url(url):
+    """
+    Returns a canonical form of the URL by normalizing the path.
+    For example, removes a trailing slash (unless the path is just '/').
+    """
+    parsed = urlparse(url)
+    # Normalize the path: remove trailing slash if not the root
+    path = parsed.path.rstrip('/')
+    if not path:
+        path = '/'
+    return urlunparse((parsed.scheme, parsed.netloc, path, parsed.params, parsed.query, parsed.fragment))

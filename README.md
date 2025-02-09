@@ -95,27 +95,27 @@ Install dependencies from `requirements.txt`.
 1. **Create the `configs/` folder**:
    This folder will contain the configuration files for your scrapers. Each scraper should have its own configuration file written in Python.
 
-   Example configuration file (`configs/example_university.py`):
+   Example working configuration file (`configs/brown_university.py`):
    ```python
    from scraper_module.config import *
 
    config = SpiderConfig(
-       name="example_university",
-       start_url="https://example.edu/courses",
+       name="brown_university",
+       start_url="https://bulletin.brown.edu/",
        use_playwright=False,
        pagination=Search_Links(
-           search_space='xpath://div[@class="pagination"]',
-           link_selector="xpath:a/@href",
-           target_page_selector='xpath://a[contains(text(), "Next")]/@href'
+           search_space='xpath://div[@id="cl-menu"]/ul[@id="/"]',
+           link_selector="xpath:li/a/@href",
+           target_page_selector='xpath://div[@id="tabs"]/ul/li[@id="courseinventorytab"]/a/@href' # Target page to scrape
        ),
        tasks=[
            Find(
                task_name="courses",
-               search_space='xpath://div[@class="course-list"]',
+               search_space='xpath://*[@id="courseinventorycontainer"]/div/div',
                repeating_selector="div",
                fields={
-                   "title": 'xpath:h2/text()',
-                   "description": 'xpath:p[@class="summary"]//text()join'
+                   "title": 'xpath:p[@class="courseblocktitle"]/strong//text()',
+                   "description": 'xpath:p[@class="courseblockdesc"]//text()join'
                },
                num_required=1
            )
@@ -136,7 +136,7 @@ Install dependencies from `requirements.txt`.
        for file in glob.glob("data_output/*.json"):
            os.remove(file)
 
-   EXCLUDE_ENGINES = {"example_exclude"}
+   EXCLUDE_ENGINES = {"example_exclude"} # For testing purposes
 
    if __name__ == "__main__":
        clean_output()
@@ -233,8 +233,7 @@ Find(
 your_project/
 │── run.py                  # Orchestrates spider execution
 │── configs/                # Configuration files for spiders
-│   ├── example_university.py
-│   ├── new_university.py
+│   ├── example_spider.py
 │── scraper_module/         # Imported scraping framework
 │   ├── config.py            # Dataclasses for scraper configs
 │   ├── scraper_lib/

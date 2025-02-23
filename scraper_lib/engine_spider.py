@@ -42,7 +42,10 @@ class StepSpider(scrapy.Spider):
             self.visited_urls.add(canonical_url)
         return scrapy.Request(url, callback=callback, meta=meta)
 
-    def _search_links_recursive(self, response):
+    def _search_links_recursive(self, response, depth=0, max_depth=10):
+        if depth > max_depth:
+            self.logger.debug(f"Reached max recursion depth {max_depth}")
+            return
         target_page_selector = self.pagination.get("target_page_selector")
         if (not target_page_selector) or _select(response, target_page_selector):
             yield from self.parse_steps(response)
@@ -57,7 +60,7 @@ class StepSpider(scrapy.Spider):
                     canonical_url = canonicalize_url(abs_url)
                     if canonical_url not in self.visited_urls:
                         self.visited_urls.add(canonical_url)
-                        yield self._make_request(abs_url, self._search_links_recursive)
+                        yield self._make_request(abs_url, lambda r: self._search_links_recursive(r, depth+1, max_depth))
 
     def handle_pagination(self, response):
         target_page_selector = self.pagination.get("target_page_selector")

@@ -16,8 +16,10 @@ class Listed_Links(PaginationConfig, _DefaultConfig):
 
 @dataclass
 class Search_Links(PaginationConfig, _DefaultConfig):
-    link_selector: str             # Selector for pagination links
-    target_page_selector: str      # Selector for target page links
+    link_selector: str                      # Selector for pagination links
+    target_page_selector: str = None        # Selector for target page links
+    max_depth: int = 10
+    base_url: str = None
 
 @dataclass
 class TaskConfig:

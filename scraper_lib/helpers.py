@@ -43,7 +43,10 @@ def find_pages(selector_or_response, step):
     Given a pagination step definition, yield each found pagination URL.
     """
     search_space = step.get("search_space")
-    link_selector = step.get("link_selector")
+    if not ("href" in str(step.get("link_selector"))):
+        link_selector = str(step.get("link_selector")) + "/@href"
+    else:
+        link_selector = step.get("link_selector")
     if not (search_space and link_selector):
         logger.debug("Pagination step missing search_space or link_selector.")
         return []

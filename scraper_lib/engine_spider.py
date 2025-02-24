@@ -18,7 +18,7 @@ class StepSpider(scrapy.Spider):
         if self.use_playwright:
             self.custom_settings.update({
                 "PLAYWRIGHT_BROWSER_TYPE": "chromium",
-                "PLAYWRIGHT_LAUNCH_OPTIONS": {"headless": True},
+                "PLAYWRIGHT_LAUNCH_OPTIONS": {"headless": True, "timeout": 30000},
             })
 
     def start_requests(self):
@@ -42,14 +42,17 @@ class StepSpider(scrapy.Spider):
             self.visited_urls.add(canonical_url)
         return scrapy.Request(url, callback=callback, meta=meta)
 
-    def _search_links_recursive(self, response, depth=0, max_depth=10):
+    def _search_links_recursive(self, response, max_depth, depth=0):
         if depth > max_depth:
             self.logger.debug(f"Reached max recursion depth {max_depth}")
             return
         target_page_selector = self.pagination.get("target_page_selector")
-        if (not target_page_selector) or _select(response, target_page_selector):
+        if (not target_page_selector) or (target_page_selector and _select(response, target_page_selector)):
             yield from self.parse_steps(response)
         search_space = self.pagination.get("search_space")
+        must_contain = self.pagination.get("base_url")
+        if not must_contain:
+            must_contain = list(str(self.start_url).strip("http://").split('/'))[0]
         if not search_space:
             return
         for parent in _select(response, search_space):
@@ -58,17 +61,23 @@ class StepSpider(scrapy.Spider):
                 if href:
                     abs_url = response.urljoin(href)
                     canonical_url = canonicalize_url(abs_url)
-                    if canonical_url not in self.visited_urls:
+                    if (canonical_url not in self.visited_urls) and (must_contain in canonical_url):
                         self.visited_urls.add(canonical_url)
-                        yield self._make_request(abs_url, lambda r: self._search_links_recursive(r, depth+1, max_depth))
+                        yield self._make_request(abs_url, lambda r: self._search_links_recursive(response = r, depth = depth+1, max_depth = self.pagination.get("max_depth", 10)))
 
     def handle_pagination(self, response):
+        content_type = response.headers.get('Content-Type', b'').decode('utf8').lower()
+        if "html" not in content_type:
+            self.logger.debug(f"Skipping pagination on non-HTML response: {response.url} with content type: {content_type}")
+            return
+
         target_page_selector = self.pagination.get("target_page_selector")
-        if (not target_page_selector) or _select(response, target_page_selector):
+        if (not target_page_selector) or (target_page_selector and _select(response, target_page_selector)):
             yield from self.parse_steps(response)
         ptype = self.pagination.get("type")
 
         if ptype == "listed_links":
+            yield from self.parse_steps(response)
             for url in find_pages(response, self.pagination):
                 abs_url = response.urljoin(url)
                 canonical_url = canonicalize_url(abs_url)
@@ -76,12 +85,17 @@ class StepSpider(scrapy.Spider):
                     self.visited_urls.add(canonical_url)
                     yield self._make_request(abs_url, self.handle_pagination)
         elif ptype == "search_links":
-            yield from self._search_links_recursive(response)
+            yield from self._search_links_recursive(response, max_depth = self.pagination.get("max_depth", 10))
         else:
             yield from self.parse_steps(response)
 
 
     def parse_steps(self, response, step_index=0, parent_item=None):
+        content_type = response.headers.get('Content-Type', b'').decode('utf8').lower()
+        if "html" not in content_type:
+            self.logger.debug(f"Skipping non-HTML response: {response.url} with content type: {content_type}")
+            return
+        
         self.logger.debug(f"ATTEMPTING TO PARSE STEP {step_index}")
         if step_index >= len(self.steps):
             if parent_item:

@@ -7,7 +7,7 @@ NEWSPIDER_MODULE = 'scraper_module.scraper_project.spiders'
 # USER_AGENT = 'scraper_module (+http://example.com)'
 
 # Obey robots.txt rules? (Many turn this off to scrape more freely)
-ROBOTSTXT_OBEY = True
+ROBOTSTXT_OBEY = False
 
 ITEM_PIPELINES = {
     'scraper_module.scraper_project.pipelines.ScraperModulePipeline': 300,

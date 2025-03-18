@@ -34,7 +34,7 @@ class StepSpider(scrapy.Spider):
         if self.use_playwright:
             meta.update({
                 "playwright": True,
-                "playwright_page_methods": [PageMethod("wait_for_timeout", 8000)]
+                "playwright_page_methods": [PageMethod("wait_for_timeout", 3000)]
             })
             canonical_url = canonicalize_url(url)
             if canonical_url in self.visited_urls:
@@ -95,7 +95,7 @@ class StepSpider(scrapy.Spider):
         if "html" not in content_type:
             self.logger.debug(f"Skipping non-HTML response: {response.url} with content type: {content_type}")
             return
-        
+    
         self.logger.debug(f"ATTEMPTING TO PARSE STEP {step_index}")
         if step_index >= len(self.steps):
             if parent_item:
@@ -110,6 +110,8 @@ class StepSpider(scrapy.Spider):
             for item in find(response, step):
                 self.logger.debug(f"FOUND ITEM: {item}")
                 yield from self.parse_steps(response, step_index + 1, item)
+        elif action == "dynamicfind":
+            yield from self.dynamic_find(response, step)
         elif action == "follow":
             link_field = step.get("link_field")
             if not parent_item or not parent_item.get(link_field):
@@ -125,8 +127,35 @@ class StepSpider(scrapy.Spider):
                         callback=lambda r, s=next_steps, pi=parent_item: self.parse_followed_steps(r, s, pi)
                     )
         else:
-            # Skip unrecognized actions
             yield from self.parse_steps(response, step_index + 1, parent_item)
+            
+    def dynamic_find(self, response, step):
+        # Extract links (each link should be an AJAX URL parameter containing a course ID)
+        links = _select(response, step.get("search_space")).getall()
+        self.logger.debug(f"DynamicFind: Found {len(links)} links.")
+        import re
+        for link in links:
+            match = re.search(r'coid=(\d+)', link)
+            if match:
+                coid = match.group(1)
+                display_options = 'a:2:{s:8:"~location~";s:8:"~template~";s:28:"~course_program_display_field~";s:0:"";}'
+                from urllib.parse import quote
+                encoded_display_options = quote(display_options)
+                ajax_url = f"{step.get('base_url')}?catoid={step.get('catoid')}&coid={coid}&display_options={encoded_display_options}&show"
+                yield scrapy.Request(url=ajax_url, callback=self.parse_dynamic_course, meta={'step': step})
+                
+    def parse_dynamic_course(self, response):
+        step = response.meta.get('step')
+        fields = step.get('fields', {})
+        title_xpath = fields.get('title')
+        desc_xpath = fields.get('description')
+        from .helpers import _extract_text  # Use our helper for text extraction
+        title = _extract_text(response, title_xpath)
+        description = _extract_text(response, desc_xpath)
+        yield {
+            'title': title if title else "No Title Found",
+            'description': description if description else "No Description Found",
+        }
 
     def parse_followed_steps(self, response, steps, parent_item):
         if not steps:

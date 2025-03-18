@@ -1,3 +1,4 @@
 scraper_module
 configs/__pycache__
-.DS_Store
+.DS_Storevenv/
+venv/

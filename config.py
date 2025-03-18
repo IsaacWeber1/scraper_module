@@ -46,3 +46,10 @@ class SpiderConfig:
     use_playwright: bool = False
     pagination: Optional[PaginationConfig] = None
     tasks: List[TaskConfig] = field(default_factory=list)
+    
+@dataclass
+class DynamicFind(TaskConfig, _DefaultConfig):
+    search_space: str  # Selector to locate course links on the catalog page
+    base_url: str      # Base AJAX URL for course details
+    catoid: int        # Category ID for the courses
+    fields: Dict[str, str]  # Mapping for extracting course details (e.g., title, description)

@@ -5,7 +5,7 @@ from .engine_spider import StepSpider
 from scrapy.crawler import CrawlerProcess
 from typing import List
 from scraper_module.config import SpiderConfig
-
+from scrapy import signals
 logger = logging.getLogger(__name__)
 
 class ScraperEngine:
@@ -48,10 +48,11 @@ class ScraperEngine:
         })
         process = CrawlerProcess(settings)
         crawler = process.create_crawler(StepSpider)
+        
         # Define a simple item collector
         def item_collector(item, response, spider):
             self.items_collected.append(item)
-        crawler.signals.connect(item_collector, signal=StepSpider.signals.item_scraped)
+        crawler.signals.connect(item_collector, signal=signals.item_scraped)
         process.crawl(crawler,
                       start_url=self.start_url,
                       steps=self.steps,
@@ -59,3 +60,30 @@ class ScraperEngine:
                       pagination=self.pagination)
         process.start()
         return self.items_collected
+    
+    def schedule(self, process):
+        output_file = f"./data_output/{self.name}.json"
+        process.settings.set("FEEDS", {
+            output_file: {
+                "format": "json",
+                "encoding": "utf8",
+                "store_empty": False,
+                "indent": 4,
+                "overwrite": True,
+            },
+        })
+
+        crawler = process.create_crawler(StepSpider)
+
+        def item_collector(item, response, spider):
+            self.items_collected.append(item)
+
+        crawler.signals.connect(item_collector, signal=signals.item_scraped)
+
+        process.crawl(
+            crawler,
+            start_url=self.start_url,
+            steps=self.steps,
+            use_playwright=self.playwright,
+            pagination=self.pagination,
+        )

@@ -129,7 +129,7 @@ class StepSpider(scrapy.Spider):
         else:
             yield from self.parse_steps(response, step_index + 1, parent_item)
             
-    def dynamic_find(self, response, step):
+    '''def dynamic_find(self, response, step):
         # Extract links (each link should be an AJAX URL parameter containing a course ID)
         links = _select(response, step.get("search_space")).getall()
         self.logger.debug(f"DynamicFind: Found {len(links)} links.")
@@ -142,7 +142,50 @@ class StepSpider(scrapy.Spider):
                 from urllib.parse import quote
                 encoded_display_options = quote(display_options)
                 ajax_url = f"{step.get('base_url')}?catoid={step.get('catoid')}&coid={coid}&display_options={encoded_display_options}&show"
-                yield scrapy.Request(url=ajax_url, callback=self.parse_dynamic_course, meta={'step': step})
+                yield scrapy.Request(url=ajax_url, callback=self.parse_dynamic_course, meta={'step': step})'''
+                
+    def dynamic_find(self, response, step):
+        # First, extract AJAX course links (each should contain a course ID in its query string)
+        links = _select(response, step.get("search_space")).getall()
+        self.logger.debug(f"DynamicFind: Found {len(links)} course links.")
+        import re
+        for link in links:
+            match = re.search(r'coid=(\d+)', link)
+            if match:
+                coid = match.group(1)
+                display_options = 'a:2:{s:8:"~location~";s:8:"~template~";s:28:"~course_program_display_field~";s:0:"";}'
+                from urllib.parse import quote
+                encoded_display_options = quote(display_options)
+                ajax_url = (
+                    f"{step.get('base_url')}?catoid={step.get('catoid')}"
+                    f"&coid={coid}&display_options={encoded_display_options}&show"
+                )
+                yield scrapy.Request(
+                    url=ajax_url,
+                    callback=self.parse_dynamic_course,
+                    meta={'step': step}
+                )
+
+        # Next, handle pagination if a pagination selector is provided in the step config.
+        # (For example, add "pagination_selector": "css_selector_for_pagination_links" in your config.)
+        pagination_selector = step.get("pagination_selector")
+        if pagination_selector:
+            pagination_links = _select(response, pagination_selector)
+            all_page_links = pagination_links.getall() if pagination_links else []
+            self.logger.debug(f"DynamicFind: Found {len(all_page_links)} pagination link(s).")
+            for link in pagination_links:
+                href = link.get()
+                if href:
+                    abs_url = response.urljoin(href)
+                    from .helpers import canonicalize_url  # Ensure canonicalization is imported
+                    canonical_url = canonicalize_url(abs_url)
+                    if canonical_url not in self.visited_urls:
+                        self.visited_urls.add(canonical_url)
+                        self.logger.debug(f"DynamicFind: Following pagination URL: {abs_url}")
+                        yield scrapy.Request(
+                            url=abs_url,
+                            callback=lambda r, s=step: self.dynamic_find(r, s)
+                        )
                 
     def parse_dynamic_course(self, response):
         step = response.meta.get('step')

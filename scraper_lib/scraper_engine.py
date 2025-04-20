@@ -1,5 +1,6 @@
 # scraper_module/scraper_lib/scraper_engine.py
 import logging
+from pathlib import Path
 from scrapy.utils.project import get_project_settings
 from .engine_spider import StepSpider
 from scrapy.crawler import CrawlerProcess
@@ -61,10 +62,12 @@ class ScraperEngine:
         process.start()
         return self.items_collected
     
-    def schedule(self, process):
-        output_file = f"./data_output/{self.name}.json"
+    def schedule(self, process, output_dir: str = "./data_output"):
+        out_path = Path(output_dir)
+        
+        feed_uri = str(out_path / f"{self.name}.json")
         process.settings.set("FEEDS", {
-            output_file: {
+            feed_uri: {
                 "format": "json",
                 "encoding": "utf8",
                 "store_empty": False,
